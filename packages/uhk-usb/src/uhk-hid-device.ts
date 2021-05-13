@@ -11,6 +11,8 @@ import {
     isEqualArray,
     LeftSlotModules,
     LogService,
+    mapI2cAddressToModuleName,
+    ModuleSlotToI2cAddress,
     RightSlotModules,
     UdevRulesInfo
 } from 'uhk-common';
@@ -20,7 +22,6 @@ import {
     KbootCommands,
     LAYER_NUMBER_TO_STRING,
     MODULE_ID_TO_STRING,
-    ModuleSlotToI2cAddress,
     UsbCommand
 } from './constants';
 import {
@@ -34,6 +35,7 @@ import {
     snooze
 } from './util';
 import { DeviceState, GetDeviceOptions, ReenumerateOption } from './models';
+import { getNumberOfConnectedDevices } from './utils';
 
 export const BOOTLOADER_TIMEOUT_MS = 5000;
 
@@ -110,8 +112,14 @@ export class UhkHidDevice {
                 leftModuleSlot: LeftSlotModules.NoModule,
                 isLeftHalfConnected: true,
                 rightModuleSlot: RightSlotModules.NoModule
-            }
+            },
+            hardwareModules: {},
+            multiDevice: getNumberOfConnectedDevices() > 1
         };
+
+        if (result.multiDevice) {
+            return result;
+        }
 
         for (const dev of devs) {
             if (!result.connectedDevice) {
@@ -188,7 +196,9 @@ export class UhkHidDevice {
         this._prevDevices = [];
     }
 
-    async reenumerate({ enumerationMode, pid, vid, timeout = BOOTLOADER_TIMEOUT_MS }: ReenumerateOption): Promise<void> {
+    async reenumerate(
+        { enumerationMode, productId, vendorId, timeout = BOOTLOADER_TIMEOUT_MS }: ReenumerateOption
+    ): Promise<void> {
         const reenumMode = EnumerationModes[enumerationMode].toString();
         this.logService.misc(`[UhkHidDevice] Start reenumeration, mode: ${reenumMode}, timeout: ${timeout}ms`);
 
@@ -209,8 +219,8 @@ export class UhkHidDevice {
             const devs = devices();
 
             const inBootloaderMode = devs.some((x: Device) =>
-                x.vendorId === vid &&
-                x.productId === pid);
+                x.vendorId === vendorId &&
+                x.productId === productId);
 
             if (inBootloaderMode) {
                 this.logService.misc('[UhkHidDevice] Reenumerating devices');
@@ -249,12 +259,11 @@ export class UhkHidDevice {
 
     async sendKbootCommandToModule(module: ModuleSlotToI2cAddress, command: KbootCommands, maxTry = 1): Promise<any> {
         let transfer;
-        const moduleName = kbootCommandName(module);
-        this.logService.usb(`[UhkHidDevice] USB[T]: Send KbootCommand ${moduleName} ${KbootCommands[command].toString()}`);
+        this.logService.usb(`[UhkHidDevice] USB[T]: Send KbootCommand ${mapI2cAddressToModuleName(module)} ${KbootCommands[command].toString()}`);
         if (command === KbootCommands.idle) {
             transfer = Buffer.from([UsbCommand.SendKbootCommandToModule, command]);
         } else {
-            transfer = Buffer.from([UsbCommand.SendKbootCommandToModule, command, Number.parseInt(module, 16)]);
+            transfer = Buffer.from([UsbCommand.SendKbootCommandToModule, command, module]);
         }
         await retry(async () => await this.write(transfer), maxTry, this.logService);
     }
@@ -388,21 +397,5 @@ export class UhkHidDevice {
         for (const logDevice of devs) {
             this.logService.misc(JSON.stringify(logDevice));
         }
-    }
-}
-
-function kbootCommandName(module: ModuleSlotToI2cAddress): string {
-    switch (module) {
-        case ModuleSlotToI2cAddress.leftHalf:
-            return 'leftHalf';
-
-        case ModuleSlotToI2cAddress.leftModule:
-            return 'leftModule';
-
-        case ModuleSlotToI2cAddress.rightModule:
-            return 'rightModule';
-
-        default:
-            return 'Unknown';
     }
 }

@@ -12,14 +12,14 @@
   "license": "See in LICENSE",
   "dependencies": {
     "command-line-args": "5.1.1",
-    "command-line-usage": "6.1.0",
+    "command-line-usage": "6.1.1",
     "decompress": "4.2.1",
     "decompress-bzip2": "4.0.0",
     "decompress-targz": "4.1.1",
     "node-hid": "2.1.1",
     "sudo-prompt": "9.2.1",
     "tmp": "0.2.1",
-    "tslib": "2.0.3",
+    "tslib": "2.2.0",
     "uhk-common": "^1.0.0",
     "uhk-usb": "^1.0.0"
   },

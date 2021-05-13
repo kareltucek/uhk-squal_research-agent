@@ -45,7 +45,7 @@ if (!areServicesInited) {
     logger.misc('[Electron Main] init services.');
 
     if (isDev) {
-        packagesDir = path.join(path.join(process.cwd(), process.argv[1]), '../../../../tmp');
+        packagesDir = path.join(process.cwd(), '../../tmp');
     } else {
         packagesDir = path.dirname(app.getAppPath());
     }
@@ -77,6 +77,7 @@ function createWindow() {
         width: loadedWindowState.width,
         height: loadedWindowState.height,
         webPreferences: {
+            contextIsolation: false,
             nodeIntegration: true,
             enableRemoteModule: true,
             spellcheck: false,
@@ -92,9 +93,9 @@ function createWindow() {
     }
 
     setMenu(win);
-    deviceService = new DeviceService(logger, win, uhkHidDeviceService, uhkOperations, packagesDir, options);
+    deviceService = new DeviceService(logger, win, uhkHidDeviceService, uhkOperations, packagesDir);
     appUpdateService = new AppUpdateService(logger, win, app);
-    appService = new AppService(logger, win, deviceService, options, uhkHidDeviceService, packagesDir);
+    appService = new AppService(logger, win, deviceService, options, packagesDir);
     sudoService = new SudoService(logger, options, deviceService, packagesDir);
 // and load the index.html of the app.
 

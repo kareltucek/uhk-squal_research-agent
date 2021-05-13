@@ -1,29 +1,38 @@
 import { ipcMain } from 'electron';
-import { isEqual } from 'lodash';
+import { cloneDeep, isEqual } from 'lodash';
 import {
-    CommandLineArgs,
     ConfigurationReply,
     DeviceConnectionState,
+    findUhkModuleById,
     FirmwareUpgradeIpcResponse,
     getHardwareConfigFromDeviceResponse,
     HardwareModules,
     IpcEvents,
     IpcResponse,
+    LEFT_HALF_MODULE,
+    LeftSlotModules,
     LogService,
     mapObjectToUserConfigBinaryBuffer,
+    ModuleInfo,
+    ModuleSlotToId,
     SaveUserConfigurationData,
     UpdateFirmwareData,
-    UploadFileData
+    UploadFileData,
+    RightSlotModules,
+    RIGHT_HALF_FIRMWARE_UPGRADE_MODULE_NAME
 } from 'uhk-common';
 import {
     checkFirmwareAndDeviceCompatibility,
     getCurrentUhkDeviceProduct,
+    getCurrentUhkDeviceProductByBootloaderId,
     getDeviceFirmwarePath,
     getFirmwarePackageJson,
+    getModuleFirmwarePath,
     snooze,
+    TmpFirmware,
     UhkHidDevice,
     UhkOperations,
-    TmpFirmware
+    waitForDevice
 } from 'uhk-usb';
 import { emptyDir } from 'fs-extra';
 import * as path from 'path';
@@ -54,9 +63,8 @@ export class DeviceService {
                 private win: Electron.BrowserWindow,
                 private device: UhkHidDevice,
                 private operations: UhkOperations,
-                private rootDir: string,
-                private options: CommandLineArgs) {
-        this.startPollUhkDevice();
+                private rootDir: string
+    ) {
         this.uhkDevicePoller()
             .catch(error => {
                 this.logService.error('[DeviceService] UHK Device poller error', error);
@@ -172,19 +180,51 @@ export class DeviceService {
         try {
             await this.operations.waitUntilKeyboardBusy();
 
-            return {
-                leftModuleInfo: await this.operations.getLeftModuleVersionInfo(),
+            const hardwareModules = {
+                moduleInfos: [],
                 rightModuleInfo: await this.operations.getRightModuleVersionInfo()
             };
+
+            const halvesStates = await this.device.getHalvesStates();
+
+            const leftModuleInfo: ModuleInfo = {
+                module: LEFT_HALF_MODULE,
+                info: {}
+            };
+            hardwareModules.moduleInfos.push(leftModuleInfo);
+
+            if (halvesStates.isLeftHalfConnected) {
+                leftModuleInfo.info = await this.operations.getModuleVersionInfo(LEFT_HALF_MODULE.slotId);
+            }
+
+            if (halvesStates.leftModuleSlot !== LeftSlotModules.NoModule) {
+                const module = findUhkModuleById(halvesStates.leftModuleSlot);
+
+                hardwareModules.moduleInfos.push({
+                    module: module,
+                    info: await this.operations.getModuleVersionInfo(module.slotId)
+                });
+            }
+
+            if (halvesStates.rightModuleSlot !== RightSlotModules.NoModule) {
+                const module = findUhkModuleById(halvesStates.rightModuleSlot);
+
+                hardwareModules.moduleInfos.push({
+                    module: module,
+                    info: await this.operations.getModuleVersionInfo(module.slotId)
+                });
+            }
+
+            return hardwareModules;
         } catch (err) {
             if (!catchError) {
-                return err;
+                throw err;
             }
 
             this.logService.error('[DeviceService] Read hardware modules information failed', err);
 
             return {
-                leftModuleInfo: {},
+                moduleInfos: [],
                 rightModuleInfo: {}
             };
         }
@@ -208,21 +248,66 @@ export class DeviceService {
 
             const packageJson = await getFirmwarePackageJson(firmwarePathData);
             this.logService.misc('New firmware version:', packageJson.firmwareVersion);
+
+            event.sender.send(IpcEvents.device.updateFirmwareJson, packageJson);
+
             const uhkDeviceProduct = getCurrentUhkDeviceProduct();
             checkFirmwareAndDeviceCompatibility(packageJson, uhkDeviceProduct);
 
             this.logService.misc('Agent version:', data.versionInformation.version);
             const hardwareModules = await this.getHardwareModules(false);
-            this.logService.misc('Device right firmware version:', hardwareModules.rightModuleInfo.firmwareVersion);
-            this.logService.misc('Device left firmware version:', hardwareModules.leftModuleInfo.firmwareVersion);
 
             await this.stopPollUhkDevice();
             this.device.resetDeviceCache();
 
             this.logService.misc('UHK Device firmware upgrade starts:', JSON.stringify(uhkDeviceProduct));
             const deviceFirmwarePath = getDeviceFirmwarePath(uhkDeviceProduct, packageJson);
-            await this.operations.updateRightFirmwareWithKboot(deviceFirmwarePath, uhkDeviceProduct);
-            await this.operations.updateLeftModuleWithKboot(firmwarePathData.leftFirmwarePath, uhkDeviceProduct);
+
+            this.logService.misc('Device right firmware version:', hardwareModules.rightModuleInfo.firmwareVersion);
+            if (data.forceUpgrade || hardwareModules.rightModuleInfo.firmwareVersion !== packageJson.firmwareVersion) {
+                event.sender.send(IpcEvents.device.moduleFirmwareUpgrading, RIGHT_HALF_FIRMWARE_UPGRADE_MODULE_NAME);
+                await this.operations.updateRightFirmwareWithKboot(deviceFirmwarePath, uhkDeviceProduct);
+            } else {
+                this.logService.misc('Skip right firmware upgrade.');
+            }
+
+            const leftModuleInfo: ModuleInfo = hardwareModules.moduleInfos
+                .find(moduleInfo => moduleInfo.module.slotId === ModuleSlotToId.leftHalf);
+            this.logService.misc('Left module firmware version: ', leftModuleInfo.info.firmwareVersion);
+            if (data.forceUpgrade || leftModuleInfo.info.firmwareVersion !== packageJson.firmwareVersion) {
+                event.sender.send(IpcEvents.device.moduleFirmwareUpgrading, leftModuleInfo.module.name);
+                await this.operations
+                    .updateModuleWithKboot(
+                        getModuleFirmwarePath(leftModuleInfo.module, packageJson),
+                        uhkDeviceProduct,
+                        leftModuleInfo.module
+                    );
+            } else {
+                this.logService.misc('Skip left firmware upgrade.');
+            }
+
+            for (const moduleInfo of hardwareModules.moduleInfos) {
+                if (moduleInfo.module.slotId === ModuleSlotToId.leftHalf) {
+                    // Left half upgrade mandatory, it is running before the other modules upgrade.
+                }
+                else if (moduleInfo.module.firmwareUpgradeSupported) {
+                    this.logService.misc(`"${moduleInfo.module.name}" firmware version:`, moduleInfo.info.firmwareVersion);
+                    if (data.forceUpgrade ||  moduleInfo.info.firmwareVersion !== packageJson.firmwareVersion) {
+                        event.sender.send(IpcEvents.device.moduleFirmwareUpgrading, moduleInfo.module.name);
+                        await this.operations
+                            .updateModuleWithKboot(
+                                getModuleFirmwarePath(moduleInfo.module, packageJson),
+                                uhkDeviceProduct,
+                                moduleInfo.module
+                            );
+                        this.logService.misc(`"${moduleInfo.module.name}" firmware update done.`);
+                    } else {
+                        this.logService.misc(`Skip "${moduleInfo.module.name}" firmware upgrade.`);
+                    }
+                } else {
+                    this.logService.misc(`Skip "${moduleInfo.module.name}" firmware upgrade. Currently not supported`);
+                }
+            }
 
             response.success = true;
             response.modules = await this.getHardwareModules(false);
@@ -253,13 +338,16 @@ export class DeviceService {
             const packageJson = await getFirmwarePackageJson(firmwarePathData);
             await this.stopPollUhkDevice();
 
-            const uhkDeviceProduct = getCurrentUhkDeviceProduct();
+            const uhkDeviceProduct = getCurrentUhkDeviceProductByBootloaderId();
             checkFirmwareAndDeviceCompatibility(packageJson, uhkDeviceProduct);
 
-            this.logService.misc('UHK Device recovery starts:', JSON.stringify(uhkDeviceProduct));
+            this.logService.misc('[DeviceService] UHK Device recovery starts:', JSON.stringify(uhkDeviceProduct));
             const deviceFirmwarePath = getDeviceFirmwarePath(uhkDeviceProduct, packageJson);
 
             await this.operations.updateRightFirmwareWithKboot(deviceFirmwarePath, uhkDeviceProduct);
+
+            this.logService.misc('[DeviceService] Waiting for keyboard');
+            await waitForDevice(uhkDeviceProduct.vendorId, uhkDeviceProduct.keyboardPid);
 
             response.modules = await this.getHardwareModules(false);
             response.success = true;
@@ -267,10 +355,14 @@ export class DeviceService {
             const err = { message: error.message, stack: error.stack };
             this.logService.error('[DeviceService] updateFirmware error', err);
 
-            response.modules = await this.getHardwareModules(true);
+            response.modules = {
+                moduleInfos: [],
+                rightModuleInfo: {}
+            };
             response.error = err;
         }
 
+        this.startPollUhkDevice();
         await snooze(500);
         event.sender.send(IpcEvents.device.recoveryDeviceReply, response);
     }
@@ -332,8 +424,20 @@ export class DeviceService {
 
                     const state = await this.device.getDeviceConnectionStateAsync();
                     if (!isEqual(state, savedState)) {
-                        savedState = state;
+                        const newState = cloneDeep(state);
+
+                        if (state.hasPermission && state.zeroInterfaceAvailable) {
+                            state.hardwareModules = await this.getHardwareModules(false);
+                        } else {
+                            state.hardwareModules = {
+                                moduleInfos: [],
+                                rightModuleInfo: {}
+                            };
+                        }
                         this.win.webContents.send(IpcEvents.device.deviceConnectionStateChanged, state);
+
+                        savedState = newState;
+
                         this.logService.misc('[DeviceService] Device connection state changed to:', state);
                     }
                 } catch (err) {
@@ -379,20 +483,9 @@ export class DeviceService {
 
     private getDefaultFirmwarePathData(): TmpFirmware {
         return {
-            leftFirmwarePath: this.getLeftModuleFirmwarePath(),
             packageJsonPath: this.getPackageJsonFirmwarePath(),
             tmpDirectory: path.join(this.rootDir, 'packages/firmware')
         };
-    }
-
-    private getLeftModuleFirmwarePath(): string {
-        const firmware = path.join(this.rootDir, 'packages/firmware/modules/uhk60-left.bin');
-
-        if (fs.existsSync(firmware)) {
-            return firmware;
-        }
-
-        throw new Error(`Could not found left module firmware ${firmware}`);
     }
 
     private getPackageJsonFirmwarePath(): string {

@@ -6,6 +6,50 @@ The format is loosely based on [Keep a Changelog](http://keepachangelog.com/en/1
 
 Every Agent version includes the most recent firmware version. See the [firmware changelog](https://github.com/UltimateHackingKeyboard/firmware/blob/master/CHANGELOG.md).
 
+## [1.5.13] - 2020-05-04
+
+Firmware: 8.10.9 [[release](https://github.com/UltimateHackingKeyboard/firmware/releases/tag/v8.10.9)] | Device Protocol: 4.7.0 | User Config: 4.1.1 | Hardware Config: 1.0.0
+
+- Fix firmware recovery mode.
+- Fix bug that made Agent sometimes not detect the UHK upon startup.
+- Error out during firmware update if connecting to a module takes longer than 30 seconds.
+- Fix check marks next to the modules when force-updating the same firmware version.
+
+## [1.5.12] - 2020-04-26
+
+Firmware: 8.10.**9** [[release](https://github.com/UltimateHackingKeyboard/firmware/releases/tag/v8.10.9)] | Device Protocol: 4.7.0 | User Config: 4.1.1 | Hardware Config: 1.0.0
+
+- Make the firmware update process only update the needed keyboard halves and modules and show the current update step.
+
+## [1.5.11] - 2020-03-31
+
+Firmware: 8.10.**8** [[release](https://github.com/UltimateHackingKeyboard/firmware/releases/tag/v8.10.8)] | Device Protocol: 4.7.0 | User Config: 4.1.1 | Hardware Config: 1.0.0
+
+- Make the firmware updater update connected modules.
+- Make key swapping work via drag-and-drop for non-rectangular keys.
+- Update the default user configuration and factory configuration so that "double tap to lock" is only enabled for the Mouse key.
+- When a macro is deleted, don't jump to the first macro, but to the next one.
+- When a macro items is edited, don't jump to the end of the macro.
+
+## [1.5.10] - 2020-03-11
+
+Firmware: 8.10.**7** [[release](https://github.com/UltimateHackingKeyboard/firmware/releases/tag/v8.10.7)] | Device Protocol: 4.7.0 | User Config: 4.1.1 | Hardware Config: 1.0.0
+
+- Fix the keymap action section of the key action popover.
+- Make touchpad action customizable.
+- Disallow the use of multiple UHKs with Agent by showing a dedicated screen.
+
+## [1.5.9] - 2020-02-22
+
+Firmware: 8.10.**5** [[release](https://github.com/UltimateHackingKeyboard/firmware/releases/tag/v8.10.5)] | Device Protocol: 4.7.0 | User Config: 4.1.1 | Hardware Config: 1.0.0
+
+- Support the UHK 60 v2.
+- Show connected modules.
+- Make the side menu always visible.
+- Fix keyboard description edit bug.
+- Fix duplicate keymap and duplicate macro name bug.
+- Make auto-upgrade work even on the first start of Agent.
+
 ## [1.5.8] - 2020-12-01
 
 Firmware: 8.10.**2** [[release](https://github.com/UltimateHackingKeyboard/firmware/releases/tag/v8.10.2)] | Device Protocol: 4.7.0 | User Config: 4.1.1 | Hardware Config: 1.0.0
