@@ -271,6 +271,25 @@ export class UhkOperations {
         };
     }
 
+    public async getPixgrab(): Promise<Array<Number>> {
+        var arr: Number[] = []
+        for (var i = 0; i < 22; i++) {
+            //const buffer = Buffer.from([UsbCommand.SetI2cBaudRate, rate]);
+            const buffer = Buffer.alloc(5);
+            buffer.writeUInt8(UsbCommand.GetPixgrab, 0);
+            buffer.writeUInt8(i, 1);
+            const result = await this.device.write(buffer);
+            for(var j = 0; j < 21; j++) {
+                arr.push(result[j])
+            }
+            //const buffer = yield this.device.write(uhk_common_1.Buffer.from([index_1.UsbCommand.GetPixgrab,i]));
+        }
+
+        this.device.close();
+
+        return arr;
+    }
+
     public async saveUserConfiguration(buffer: Buffer): Promise<void> {
         try {
             this.logService.usb('[DeviceOperation] USB[T]: Write user configuration to keyboard');
