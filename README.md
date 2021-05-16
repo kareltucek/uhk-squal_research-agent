@@ -1,3 +1,19 @@
+## Fork info:
+
+This fork contains some extended commands to get sensor image out of the keyboard. 
+
+Usage:
+- checkout && build && flash firmware from the neighbouring repository
+- cd into `package/usb`
+- now you can:
+    - `./get-pixgrab.ts` will pull the raw data from the sensor and dump them into the terminal
+    - `./makeImg.sh` will run pixgrab, and make a bitmap image out of them using `xxd`
+    - `./streamImg.sh` will continuously pull data from the keyboard and show them using a spawned instance of `feh`
+
+- or just feel free to look into `package/usb/Balls` directory which contains some shots of various balls...
+
+## Standard official readme:
+
 ![Agent logo & text](https://raw.githubusercontent.com/UltimateHackingKeyboard/agent/master/packages/uhk-web/src/assets/images/agent-logo-with-text.png)
 
 Agent is the configuration application of the [Ultimate Hacking Keyboard](https://ultimatehackingkeyboard.com/).
