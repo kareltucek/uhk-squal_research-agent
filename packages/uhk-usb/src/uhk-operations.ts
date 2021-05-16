@@ -282,7 +282,7 @@ export class UhkOperations {
             buffer.writeUInt8(UsbCommand.GetPixgrab, 0);
             buffer.writeUInt8(i, 1);
             const result = await this.device.write(buffer);
-            for(var j = 0; j < 21; j++) {
+            for(var j = 1; j < 22; j++) {
                 arr.push(result[j])
             }
             //const buffer = yield this.device.write(uhk_common_1.Buffer.from([index_1.UsbCommand.GetPixgrab,i]));
