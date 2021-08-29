@@ -12,6 +12,8 @@ Usage:
 
 - or just feel free to look into `package/usb/Balls` directory which contains some shots of various balls...
 
+- if you want to read more about this adventure, continue [here](the_story/how_i_made_own_trackballs.md)
+
 ## Standard official readme:
 
 ![Agent logo & text](https://raw.githubusercontent.com/UltimateHackingKeyboard/agent/master/packages/uhk-web/src/assets/images/agent-logo-with-text.png)
