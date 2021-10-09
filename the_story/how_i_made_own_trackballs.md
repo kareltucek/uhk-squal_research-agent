@@ -6,9 +6,9 @@ The story begins in early 2021 when I received a box of UHK module prototypes. I
 
 Turns out that the trackball module is pretty dexterous, and soon I found myself to prefer its responsiveness over the big heavy ball of my regular trackball. However, one thing stroke me as odd - the choice of ball.
 
-Standard trackball balls have shiny finish which gives them very smooth experience, while reliable pickup is ensured by some sort of subsurface texture - usually fine, slightly glittering grainy texture given by a powder-based pigment. The module however came with black matte ball. Black is not exactly the most reflective colour, and matte finish could be easily felt under the thumb. 
+Standard trackball balls have shiny finish which gives them very smooth rolling experience while reliable pickup is ensured by some sort of subsurface texture - usually fine, slightly glittering grainy texture given by a powder-based pigment. The module however came with black matte ball. Black is not exactly the most reflective colour, and matte finish could be easily felt under the thumb when rolling the ball. 
 
-When inquiring for reasons of the choice, I was told that shiny balls were tried, but didn't work. This information led me to a conclusion that there must be something wrong with either the used balls (which i incorrectly ruled out at first) or sensor placement. Laszlo also mentioned that he generally had problems with pickup quality at high speeds. As a result I decided to get to the bottom of things.
+When inquiring for reasons of the choice, I was told that shiny balls were tried, but didn't work. This information led me to a conclusion that there must be something wrong with either the used balls (which i incorrectly ruled out at first) or sensor placement. Laszlo also mentioned that he generally had problems with pickup quality at high speeds. Subsequently, I decided to get to the bottom of things.
 
 In the following text I will go through:
 
@@ -95,7 +95,7 @@ done
 
 # Ball prototyping
 
-Now how I started making balls - that is, make silicon molds, cast epoxy resin balls, sand them, polish them, try them, figure out what went wrong, repeat till satisfied.
+After spending some time looking for suitable balls on the internet (to no avail), I decided to try to make my own - that is, make silicon molds, cast epoxy resin balls, sand them, polish them, try them, figure out what went wrong, repeat till satisfied.
 
 ## Casting
 
@@ -131,13 +131,14 @@ For best results, I would start sanding the ball with a 1000 grit sandpaper, the
 
 If done properly, this process would yield almost perfectly smooth balls.
 
-One more issue regarding sanding - it tends to make the ball smaller, and also to spoil the shape. For this reason, for most balls I would have to decide whether I wanted good shape (but tolerate significant surface flaws) or good surface finish (but smaller size and worse shape). (Bad shape would make rolling the ball much harder as the ball is sunk deep in the tripod bearings and therefore tends to get sort of stuck in there if shape projection changes.) Ways to aleviate the problem:
+One more issue regarding sanding - it tends to make the ball smaller, and also to spoil the shape. For this reason, for most balls I would have to decide whether I wanted good shape (but tolerate significant surface flaws) or good surface finish (but smaller size and worse shape). (Bad shape would make rolling the ball much harder as the ball is sunk deep in the tripod bearings and therefore tends to get sort of stuck in there if its shape projection changes.) Ways to aleviate the problem:
 
 - Doubleshot the ball - I would push a casted ball once again into the mold after wetting the mold with clean resin. This would add approximately 0.1mm to the ball size which could later be sanded off. Also, this would improve overall shape.
 
 - Perform all sanding iterations very carefully, sanding down as little material as possible.
 
 Getting the entire process right took approximately 20 balls, maybe more. I assume there are better ways of getting same results, but those out of reach of my knowledge and probably equipment too.
+
 
 ## Pigments
 
